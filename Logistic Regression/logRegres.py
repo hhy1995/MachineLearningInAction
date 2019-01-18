@@ -9,6 +9,7 @@
 import matplotlib.font_manager as mfm
 import numpy as np
 import matplotlib.pyplot as plt
+import time
 
 """
 函数说明：读取文本文件，加载数据集，划分出数据部分和标签部分
@@ -42,14 +43,14 @@ def gradAscent(dataMat,classLabels):
     dataMatrix = np.mat(dataMat)                                    #将数据转成矩阵形式便于计算
     labelMat = np.mat(classLabels).transpose()                      #类别标签，进行转置将行向量转化成列向量
     m,n = np.shape(dataMatrix)                                      #得到矩阵的行和列的值
-    alpha = 0.001                                                   #学习率
+    alpha = 0.01                                                   #学习率
     maxCycles = 500                                                 #最大迭代次数
     weights = np.ones((n,1))
     weights_array = np.array([])
     for k in range(maxCycles):
         #矩阵相乘
         h = sigmoid(dataMatrix * weights)                           #梯度上升矢量化公式
-        error = (labelMat - h)                                      #计算真实类别与预测类别的差值
+        error = (labelMat - h)                                      #计算真实类别与预测类别的差值，当前残差，用来代替梯度
         weights = weights + alpha * dataMatrix.transpose() * error  #按照上述计算出来的差值的方向调整回归系数
         weights_array = np.append(weights_array,weights)
     weights_array = weights_array.reshape(maxCycles, n)
@@ -84,7 +85,7 @@ def stocGradAscent1(dataMatrix,classLabels,numIter = 150):              #默认�
     for j in range(numIter):
         dataIndex = range(m)
         for i in range(m):
-            alpha = 4/(1.0 + i + j) + 0.01                              #alpha在每次迭代的过程中都会调整，避免了数据波动或者高频波动
+            alpha = 4/(1.0 + i + j) + 0.01                              #alpha在每次迭代的过程中都会调整，避免了数据波动或者高频波动，但是alpha不会减小到0，后面有个常数项
             randIndex = int(np.random.uniform(0,len(dataIndex)))        #随机选取样本来更新回归系数
             h = sigmoid(sum(dataArr[randIndex] * weights))
             error = classLabels[randIndex] - h
@@ -132,8 +133,6 @@ Parameters:
 
 Returns:
     None
-Modify:
-    2018-07-22
 """
 
 
@@ -182,15 +181,22 @@ def plotWeights(weights_array1, weights_array2):
     plt.setp(axs2_ylabel_text, size=20, weight='bold', color='black')
 
     plt.show()
-
+"""
+观察图可知，梯度上升算法在遍历数据集第300次以后才开始收敛，并且处于不断波动的状态
+          随机梯度算法上升算法在遍历数据集20次以后就开始收敛，大量数据的环境下更占优势
+"""
 if __name__=='__main__':
+    start = time.clock()
     # 加载数据集
     dataMat, labelMat = loadDataSet()
-    # 训练权重
+    # 训练权重 ,随机梯度上升算法
     weights2, weights_array2 = gradAscent(dataMat, labelMat)
-    # 新方法训练权重
-    weights1, weights_array1 = stocGradAscent1(np.array(dataMat), labelMat)
+    # 新方法训练权重，改进的随机梯度上升算法
+    weights1, weights_array1 = stocGradAscent1(np.array(dataMat), labelMat,500)
     # 绘制数据集中的y和x的散点图
+    plotBestFit(weights2)
     plotBestFit(weights1)
-    print(gradAscent(dataMat, labelMat))
-    #plotWeights(weights_array1, weights_array2)
+    #print(gradAscent(dataMat, labelMat))
+    plotWeights(weights_array1, weights_array2)
+    elapsed = (time.clock() - start)
+    print("Time used:", elapsed)
